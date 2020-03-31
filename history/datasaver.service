@@ -2,6 +2,7 @@
 Description=Datasaver systemd service.
 
 [Service]
+LimitNOFILE=57942
 Type=simple
 Restart=always
 WorkingDirectory=/datasaver
