@@ -52,5 +52,6 @@ jobs:
       run: |
         gcloud compute scp ./history/datasaver datasaver1:~
         gcloud compute ssh datasaver1 --command="sudo mv ~/datasaver /datasaver/datasaver.new && sudo systemctl restart datasaver"
+        sleep 60
         gcloud compute scp ./history/datasaver datasaver2:~
         gcloud compute ssh datasaver2 --command="sudo mv ~/datasaver /datasaver/datasaver.new && sudo systemctl restart datasaver"

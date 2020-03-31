@@ -44,6 +44,9 @@ func (tt *Trades) Add(trade ITrade) {
 	defer tt.Unlock()
 
 	tt.trades = append(tt.trades, trade)
+	if len(tt.trades) >= 2000 {
+		tt.trades = tt.trades[len(tt.trades)-1000:]
+	}
 
 	for _, fn := range tt.subscribers {
 		if fn != nil {
