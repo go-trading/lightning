@@ -1,0 +1,62 @@
+name: datasaver
+on:
+  push:
+    branches:    
+      - master
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+
+    - name: Get dependencies
+      run: go get -v -t -d ./... 
+
+    - name: Test with race
+      run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+    - name: Upload coverage to Codecov  
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.out
+
+    - name: Build
+      run: |
+        cd history
+        go build -v -ldflags "-X main.GithubSHA=$GITHUB_SHA" -o datasaver
+        cd ..
+
+    - name: Set up gcloud
+      uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      with:
+        service_account_email: ${{ secrets.LIGHTNING_GCP_SA_EMAIL }}
+        service_account_key: ${{ secrets.LIGHTNING_GCP_SA_KEY }}
+
+    - name: Set up gcloud property
+      run: |
+        gcloud config set project lightning-272813
+        gcloud config set compute/zone us-central1-a
+    
+    - name: copy build to VM
+      run: |
+        gcloud compute scp ./history/datasaver datasaver1:~
+        gcloud compute scp ./history/datasaver datasaver2:~
+        gcloud compute ssh datasaver1 --command="sudo mv ~/datasaver /datasaver/datasaver.new"
+        gcloud compute ssh datasaver2 --command="sudo mv ~/datasaver /datasaver/datasaver.new"
+
+    - name: restart systemctl service
+      run: |
+        gcloud compute ssh datasaver1 --command="systemctl restart datasaver"
+        sleep 60
+        gcloud compute ssh datasaver2 --command="systemctl restart datasaver"

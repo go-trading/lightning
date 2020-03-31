@@ -1,0 +1,12 @@
+[Unit]
+Description=Datasaver systemd service.
+
+[Service]
+Type=simple
+Restart=always
+WorkingDirectory=/datasaver
+ExecStartPre=/bin/cp -b -u /datasaver/datasaver.new /datasaver/datasaver
+ExecStart=/datasaver/datasaver
+
+[Install]
+WantedBy=multi-user.target

@@ -60,11 +60,11 @@ func StartNode(cliContext *cli.Context) error {
 		{
 			"service": "saver",
 			"symbols": []string{"binance: BTCUSDT"}, //, "binance: BTCUSDT"},
-			"path":    "./saver-data",
+			"path":    "./data",
 		},
 		{
 			"service": "web",
-			"port":    8080,
+			"port":    80,
 		},
 	}
 

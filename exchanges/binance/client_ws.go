@@ -43,7 +43,7 @@ func connectWs(ctx context.Context, urlPath string, processMessage func([]byte))
 		log.Debug("ws goroutine close")
 		err := c.Close()
 		if err != nil {
-			log.WithError(err).Error("ws close error")
+			log.WithError(err).Debug("ws close error")
 		}
 	}()
 
