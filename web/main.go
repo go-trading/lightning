@@ -20,29 +20,33 @@ func Register(availableServices core.AvailableServices) {
 }
 
 type WebService struct {
-	HttpServer         *http.Server
-	HttpServerExitDone *sync.WaitGroup
-	Node               *core.Node
+	sync.WaitGroup
+	HttpServer *http.Server
+	Node       *core.Node
 }
 
 func (w *WebService) Init(node *core.Node, config *core.ServiceConfig) error {
-	http.Handle("/metrics", promhttp.Handler())
+	w.Node = node
 
+	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "hello world\n")
 	})
 
-	w.HttpServer = &http.Server{Addr: ":8080"}
-	w.HttpServerExitDone = &sync.WaitGroup{}
-	w.Node = node
+	w.HttpServer = &http.Server{Addr: config.GetString("address")}
+
+	if err := config.GetErrors(); err != nil {
+		log.WithError(err).Error("maybe incorrect web config")
+		return err
+	}
 
 	return nil
 }
 
 func (w *WebService) Start() error {
-	w.HttpServerExitDone.Add(1)
+	w.Add(1)
 	go func() {
-		defer w.HttpServerExitDone.Done() // let main know we are done cleaning up
+		defer w.Done() // let main know we are done cleaning up
 
 		if err := w.HttpServer.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("ListenAndServe(): %v", err)
@@ -58,7 +62,7 @@ func (w *WebService) Stop() error {
 		return err
 	}
 
-	w.HttpServerExitDone.Wait()
+	w.Wait()
 	return nil
 }
 

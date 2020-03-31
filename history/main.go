@@ -64,7 +64,7 @@ func StartNode(cliContext *cli.Context) error {
 		},
 		{
 			"service": "web",
-			"port":    80,
+			"address": ":80",
 		},
 	}
 
