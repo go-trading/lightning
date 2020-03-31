@@ -48,15 +48,9 @@ jobs:
         gcloud config set project lightning-272813
         gcloud config set compute/zone us-central1-a
     
-    - name: copy build to VM
+    - name: copy build and restart service to VM
       run: |
         gcloud compute scp ./history/datasaver datasaver1:~
+        gcloud compute ssh datasaver1 --command="sudo mv ~/datasaver /datasaver/datasaver.new && sudo systemctl restart datasaver"
         gcloud compute scp ./history/datasaver datasaver2:~
-        gcloud compute ssh datasaver1 --command="sudo mv ~/datasaver /datasaver/datasaver.new"
-        gcloud compute ssh datasaver2 --command="sudo mv ~/datasaver /datasaver/datasaver.new"
-
-    - name: restart systemctl service
-      run: |
-        gcloud compute ssh datasaver1 --command="systemctl restart datasaver"
-        sleep 60
-        gcloud compute ssh datasaver2 --command="systemctl restart datasaver"
+        gcloud compute ssh datasaver2 --command="sudo mv ~/datasaver /datasaver/datasaver.new && sudo systemctl restart datasaver"
