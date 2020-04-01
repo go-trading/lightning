@@ -9,10 +9,11 @@ import (
 type (
 	Trades struct {
 		sync.RWMutex
-		symbol             *Symbol
-		trades             []ITrade
-		subscribers        []TradeSubscriber
-		cancelSubscription context.CancelFunc
+		symbol                *Symbol
+		trades                []ITrade
+		subscribers           []TradeSubscriber
+		cancelSubscription    context.CancelFunc
+		historicalTradesCount int
 	}
 
 	TradeSubscriber func(*Trades, ITrade)
@@ -36,6 +37,15 @@ func (tt *Trades) SetSymbol(s *Symbol) error {
 	return nil
 }
 
+func (tt *Trades) INeedHistoricalTrades(count int) {
+	tt.Lock()
+	defer tt.Unlock()
+
+	if tt.historicalTradesCount < count {
+		tt.historicalTradesCount = count
+	}
+}
+
 func (tt *Trades) Add(trade ITrade) {
 	timeStart := time.Now()
 	defer func() { addTradesSeconds.Add(float64(time.Now().Sub(timeStart)) / 1e9) }()
@@ -43,9 +53,12 @@ func (tt *Trades) Add(trade ITrade) {
 	tt.Lock()
 	defer tt.Unlock()
 
-	tt.trades = append(tt.trades, trade)
-	if len(tt.trades) >= 2000 {
-		tt.trades = tt.trades[len(tt.trades)-1000:]
+	needSaveCount := tt.historicalTradesCount
+	if needSaveCount > 0 {
+		tt.trades = append(tt.trades, trade)
+		if len(tt.trades) >= needSaveCount*2 {
+			tt.trades = tt.trades[len(tt.trades)-needSaveCount:]
+		}
 	}
 
 	for _, fn := range tt.subscribers {
