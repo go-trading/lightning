@@ -70,6 +70,8 @@ func (s *Saver) Start() error {
 	}
 	s.write()
 	log.WithField("symbols", s.symbols).Info("saver started")
+
+	collectDiskMetrics(s.path, time.Minute)
 	return nil
 }
 
@@ -106,14 +108,14 @@ func (s *Saver) onNewTrade(tt *core.Trades, t core.ITrade) {
 
 func (s *Saver) write() {
 	s.Add(1)
-	defer s.Done()
 	go func() {
+		defer s.Done()
 		for {
 			i, ok := <-s.input
-			queueLength.Set(float64(len(s.input)))
 			if !ok {
 				return
 			}
+			queueLength.Set(float64(len(s.input)))
 			saverSymbol, ok := s.symbols[buildKey(i.tt.Symbol())]
 			if !ok {
 				log.WithField("symbol", buildKey(i.tt.Symbol())).Error("symbol not found")
